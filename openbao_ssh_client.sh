@@ -20,7 +20,7 @@ CONF_INI="$SCRIPT_PATH/config.ini"
 [[ -f $CONF_INI ]] && . $CONF_INI
 
 # check settings definition
-[[ -z "$VAULT_ADDR" || -z "$ROLE" || -z "$PRINCIPAL" || -z "$SSH_PUB_FILE" ]] && cat << EOF && exit
+[[ -z "$VAULT_ADDR" || -z "$ROLE" || -z "$PRINCIPAL" || -z "$SSH_PUB_FILE" || -z "$SSH_KEY_FILE" ]] && cat << EOF && exit
 Usage: $0 
 
 Following Parameters must be defined in $CONF_INI file
@@ -28,6 +28,7 @@ VAULT_ADDR="https://<openbao_url>"
 ROLE=<rolename>
 PRINCIPAL=<principalname>
 SSH_PUB_FILE=<path_to_public_ssh_key>
+SSH_KEY_FILE=<path_to_private_ssh_key>
 EOF
 
 # Record SSH arguments
@@ -35,11 +36,12 @@ SSH_ARGS=$@
 
 sign_key(){
   VAULT_ADDR=${VAULT_ADDR:-https://127.0.0.1} bao write -field=signed_key ssh/sign/${ROLE} public_key="$(cat ${SSH_PUB_FILE})" valid_principals=${PRINCIPAL} > $SIGNED_SSH_PUB_FILE
+  chmod 600 $SIGNED_SSH_PUB_FILE
   login_w_key
 }
 
 login_w_key(){
-  ssh -i $SIGNED_SSH_PUB_FILE $SSH_ARGS
+  ssh -o PubkeyAuthentication=yes -i $SSH_KEY_FILE $SSH_ARGS
 }
 
 # Check public file access
