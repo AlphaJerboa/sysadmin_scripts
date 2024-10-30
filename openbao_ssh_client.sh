@@ -20,8 +20,8 @@ CONF_INI="$SCRIPT_PATH/config.ini"
 [[ -f $CONF_INI ]] && . $CONF_INI
 
 # check settings definition
-[[ -z "$VAULT_ADDR" || -z "$ROLE" || -z "$PRINCIPAL" || -z "$SSH_PUB_FILE" || -z "$SSH_KEY_FILE" ]] && cat << EOF && exit
-Usage: $0 
+[[ -z "$VAULT_ADDR" || -z "$ROLE" || -z "$PRINCIPAL" || -z "$SSH_PUB_FILE" || -z "$SSH_KEY_FILE" || -z "$1" ]] && cat << EOF && exit
+Usage: $0 <ssh_arguments>
 
 Following Parameters must be defined in $CONF_INI file
 VAULT_ADDR="https://<openbao_url>"
@@ -41,7 +41,7 @@ sign_key(){
 }
 
 login_w_key(){
-  ssh -o PubkeyAuthentication=yes -i $SSH_KEY_FILE $SSH_ARGS
+  ssh -o PubkeyAuthentication=yes -i $SSH_KEY_FILE -o IdentitiesOnly=yes $SSH_ARGS
 }
 
 # Check public file access
@@ -53,7 +53,7 @@ if [[ -f $SIGNED_SSH_PUB_FILE ]]
 then
   # Check if signed key is expired
   CREATION_DURATION=$(( $(date +%s) - $(stat -c %W $SIGNED_SSH_PUB_FILE) ))
-  if [[ $CREATION_DURATION < $KEY_DURATION ]]
+  if [[ $CREATION_DURATION > $KEY_DURATION ]]
   then
     login_w_key
   else
